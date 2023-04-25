@@ -74,29 +74,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     tpl.Execute(w, nil)
 }
 
-func main() {
-    apiKey = flag.String("apikey", "", "Newsapi.org access key")
-    flag.Parse()
-
-    if *apiKey == "" {
-        log.Fatal("apiKey must be set")
-    }
-
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "3000"
-    }
-
-    mux := http.NewServeMux()
-
-    fs := http.FileServer(http.Dir("assets"))
-    mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
-
-    mux.HandleFunc("/search", searchHandler)
-    mux.HandleFunc("/", indexHandler)
-    http.ListenAndServe(":"+port, mux)
-}
-
 func searchHandler(w http.ResponseWriter, r *http.Request) {
     u, err := url.Parse(r.URL.String())
     if err != nil {
@@ -110,6 +87,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
     page := params.Get("page")
     if page == "" {
         page = "1"
+    }
+
+    if searchKey == "" {
+        indexHandler(w, r)
+        return
     }
 
     search := &Search{}
@@ -154,4 +136,27 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
     }
+}
+
+func main() {
+    apiKey = flag.String("apikey", "", "Newsapi.org access key")
+    flag.Parse()
+
+    if *apiKey == "" {
+        log.Fatal("apiKey must be set")
+    }
+
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "3000"
+    }
+
+    mux := http.NewServeMux()
+
+    fs := http.FileServer(http.Dir("assets"))
+    mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
+
+    mux.HandleFunc("/search", searchHandler)
+    mux.HandleFunc("/", indexHandler)
+    http.ListenAndServe(":"+port, mux)
 }
